@@ -1,0 +1,183 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto+Condensed:400);
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,700);
+
+body {
+	font-family: "Roboto";
+	font-size: 12pt;
+	background-color: #333;
+	line-height: 18pt;
+}
+
+.header {
+	z-index: 2;
+	min-width: 300px;
+	background-color: #333;
+	margin: auto;
+}
+.header .content {
+	padding: 16px;
+	color: #fff;
+	font-size: 16pt;
+	font-family: "Roboto Condensed";
+}
+.header .version:before {
+	content: 'v';
+}
+.header .version {
+	float: right;
+}
+
+.wrapper {
+	min-width: 300px;
+	background-color: #fff;
+	margin: auto;
+	box-shadow: 0px 0px 64px rgba(0,0,0,0.5);
+	z-index: 1;
+	min-height: 100vh;
+}
+
+.stuff .content {
+	padding: 16px;
+	min-height: 100vh;
+}
+.stuff .content h1 {
+	font-size: 20pt;
+	font-family: "Roboto Condensed";
+	padding-bottom: 8px;
+	margin-bottom: 12px;
+	border-bottom: 1px solid #bbb;
+}
+.stuff .content h2 {
+	font-size: 15pt;
+	font-family: "Roboto Condensed";
+	padding-bottom: 12px;
+}
+.stuff table {
+	width: 100%;
+}
+.stuff .stats-table {
+	width: 100%;
+}
+.stuff .stats-table tr td:nth-child(1) {
+	font-weight: 700;
+	text-align: left;
+}
+.stuff .stats-table tr td:nth-child(2) {
+	text-align: right;
+}
+.section {
+	padding-bottom: 48px;
+}
+
+.vol-val {
+	float: right;
+}
+.ctrl-value {
+	width: 72px;
+	display: inline-block;
+	line-height: 16px;
+	text-align: center;
+}
+
+input {
+	width: calc(100% - 96px);
+	float: left;
+	padding: 8px;
+	font-size: 12pt;
+	outline: none;
+	border: 1px solid #bbb;
+}
+input:focus {
+	outline: none;
+	border: 1px solid #2196F3;
+}
+.button {
+	color: #fff;
+	background-color: #2196F3;
+	min-width: 84px;
+	height: 37px;
+	float: right;
+	text-align: center;
+	line-height: 39px;
+	border-radius: 8px;
+	border: 1px solid #1976D2;
+	transition: .1s;
+}
+.button:hover {
+	transition: .1s;
+	background-color: #64B5F6;
+}
+.button:active {
+	background-color: #1E88E5;
+}
+.vlc-controls {
+	text-align: center;
+	padding-bottom: 16px;
+}
+.vlc-ctrl {
+	display: inline-block;
+	width: 48px;
+	height: 48px;
+	color: #fff;
+	background-color: #2196F3;
+	text-align: center;
+	line-height: 48px;
+	border-radius: 8px;
+	border: 1px solid #1976D2;
+	margin-right: 8px;
+}
+.vlc-ctrl:last-child {
+	margin-right: 0px;
+}
+.vlc-ctrl .fa {
+	line-height: 48px;
+	text-align: right; /*gg to proper font alignment, right?*/
+}
+.vlc-title-wrap {
+	padding-bottom: 8px;
+	text-align: center;
+}
+#vlc-title {
+	font-style: italic;
+}
+
+.nouse {
+	opacity: 0.33;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: -moz-none;
+	-o-user-select: none;
+	user-select: none;
+}
+
+.touchpad-box {
+	margin: auto;
+	min-width: 300px;
+	max-width: 700px;
+	/* height has to be set through jQuery */
+	border: 1px solid #000;
+	box-shadow: inset 0px 0px 8px rgba(0,0,0,0.5);
+}
+.touchpad-buttons {
+	margin: auto;
+	min-width: 300px;
+	max-width: 700px;
+	height: 100px;
+	border-left: 1px solid #000;
+	border-bottom: 1px solid #000;
+	border-right: 1px solid #000;
+	border-bottom-left-radius: 8px;
+	border-bottom-right-radius: 8px;
+	margin-bottom: 32px;
+}
+.touchpad-left {
+	height: 100%;
+	width: 50%;
+	float: left;
+	border-right: 1px solid #000;
+}
+.touchpad-right {
+	height: 100%;
+	width: calc(50% - 1px);
+	float: right;
+}
