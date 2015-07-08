@@ -24,10 +24,7 @@ class MediaController implements MessageComponentInterface {
 	}
 
 	public function onMessage(ConnectionInterface $from, $msg) {
-		//$numRecv = count($this->clients)
-
-		//echo sprintf('Received "%s" from connection %d' . "\n"
-		//	, $msg, $from->resourceId);
+		//echo("[" . date('m/d/Y H:i:s') . "] $msg\r\n");
 
 		$returns = handleControllerData($msg);
 		$id = count($returns) - 2;
@@ -68,6 +65,11 @@ date_default_timezone_set("America/Chicago");
 putenv("DISPLAY=:0");
 
 $vlc['paused'] = 0;
+
+// seriously
+$GLOBALS['mpd']['paused'] = 0;
+$GLOBALS['mpd']['title'] = "";
+
 $stream['title'] = "";
 
 function handleControllerData($msg) {
@@ -76,6 +78,7 @@ function handleControllerData($msg) {
 
 	global $vlc;
 	global $stream;
+	global $mpd;
 
 	switch($data[0]) {
 		case "vol":
@@ -170,6 +173,113 @@ function handleControllerData($msg) {
 					} else {
 						return array(exec("$root/vlc-cli.sh get_title"), "type" => "VLCTitle", 2);
 					}
+					break;
+			}
+			break;
+
+		case "MPD":
+			switch($data[1]) {
+				case "playing":
+					$status = exec("mpc status | head -n1");
+					if(strstr($status, " ", true) == "volume:") {
+						return array("0", "type" => "MPDPlaying", 2);
+					} else {
+						return array("1", "type" => "MPDPlaying", 2);
+					}
+					break;
+
+				case "pause":
+					if($mpd['paused']) {
+						exec("mpc play");
+						$mpd['paused'] = 0;
+					} else {
+						exec("mpc pause");
+						$mpd['paused'] = 1;
+					}
+					
+					logController("MPD","pause: " . $mpd['paused']);
+					return array($mpd['paused'], "type" => "MPDPaused", 0);
+					break;
+
+				case "paused":
+					return array($mpd['paused'], "type" => "MPDPaused", 2);
+					break;
+
+				case "stop":
+					exec("mpc stop");
+					$mpd['paused'] = 1;
+
+					logController("MPD","stop");
+					return array($mpd['paused'], "type" => "MPDPaused", 0);
+					break;
+
+				case "next":
+					exec("mpc next");
+					$mpd['title'] = exec("mpc --wait -f %title% | head -n1");
+
+					logController("MPD","next");
+					return array($mpd['title'], "type" => "MPDTitle", 0);
+					break;
+
+				case "prev":
+					exec("mpc prev");
+					$mpd['title'] = exec("mpc --wait -f %title% | head -n1");
+
+					logController("MPD","prev");
+					return array($mpd['title'], "type" => "MPDTitle", 0);
+					break;
+
+				case "title":
+					$mpd['title'] = exec("mpc -f '%artist% - %title%' | head -n1");
+					if(strstr($mpd['title'], " ", true) == "volume:") {
+						$mpd['title'] = "";
+					}
+
+					return array($mpd['title'], "type" => "MPDTitle", 2);
+					break;
+
+				case "seek":
+					exec("mpc seek " . $data[2] . "%");
+
+					logController("MPD","seek: " . $data[2]);
+					return array($data[2], "type" => "MPDElapsed", 0);
+					break;
+
+				case "elapsed":
+					$time = exec("$root/mpd-cli.sh elapsed1");
+					if($time == "") {
+						$time = exec("$root/mpd-cli.sh elapsed2");
+						if($time == "") {
+							$time = 0;
+						}
+					}
+
+					return array($time, "type" => "MPDElapsed", 2);
+					break;
+
+				case "length":
+					$time = exec("mpc -f %time% | head -n1");
+					if($time == "") {
+						$val = 0;
+					} else {
+						$time = explode(":",$time);
+						if(count($time) == 3) {
+							$val = ($time[0] * 3600) + ($time[1] * 60) + $time[2];
+						} else {
+							$val = ($time[0] * 60) + $time[1];
+						}
+					}
+
+					return array($val, "type" => "MPDLength", 2);
+					break;
+
+				case "plpos":
+					$pos = exec("mpc -f %position%");
+					if($pos == "") {
+						$pos = 0;
+					}
+
+					return array($pos, "type" => "MPDPlPos", 2);
 					break;
 			}
 			break;

@@ -137,7 +137,7 @@ input:focus {
 	padding-bottom: 8px;
 	text-align: center;
 }
-#vlc-title {
+#vlc-title, #mpd-title {
 	font-style: italic;
 }
 
@@ -150,13 +150,17 @@ input:focus {
 	user-select: none;
 }
 
-.touchpad-box {
+#drag-prohibit {
 	margin: auto;
 	min-width: 300px;
 	max-width: 700px;
 	/* height has to be set through jQuery */
 	border: 1px solid #000;
-	box-shadow: inset 0px 0px 8px rgba(0,0,0,0.5);
+	box-shadow: inset 0px 0px 8px rgba(0,0,0,0.5);	
+}
+.touchpad-box {
+	width: 100%;
+	height: 100%;
 }
 .touchpad-buttons {
 	margin: auto;

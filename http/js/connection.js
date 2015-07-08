@@ -6,6 +6,8 @@ conn.onopen = function(e) {
 	conn.send("stat^tkernel");
 	conn.send("VLC^topen");
 	conn.send("vol^tget");
+	conn.send("MPD^tplaying");
+	conn.send("MPD^tpaused");
 };
 
 conn.onmessage = function(e) {
@@ -13,7 +15,12 @@ conn.onmessage = function(e) {
 };
 
 var vlcIsOpen = 0;
-var	hasRan;
+var	hasRanVLC;
+var mpdIsPlaying = "0";
+var	hasRanMPD;
+var old_pos;
+var cur_pos;
+
 function handleReturn(data) {
 	var jsonData = JSON.parse(data);
 
@@ -64,7 +71,7 @@ function handleReturn(data) {
 				$("#twitchInput").attr("disabled","disabled");
 				$("#twitchSub").addClass("nouse");
 			} else {
-				if(vlcIsOpen == 1 || !hasRan) {
+				if(vlcIsOpen == 1 || !hasRanVLC) {
 					$("#vlc-title").text("");
 					$("#vlc-section").addClass("nouse");
 					$("#vlc-seek").slider("disable");
@@ -77,7 +84,7 @@ function handleReturn(data) {
 					$("#vlc-time").text("00:00");
 					$("#vlc-elapsed").text("00:00");
 					vlcIsOpen = 0;
-					hasRan = 1;
+					hasRanVLC = 1;
 				}
 			}
 			break;
@@ -106,6 +113,66 @@ function handleReturn(data) {
 		case "VLCTitle":
 			$("#vlc-title").text(jsonData[0]);
 			break;
+
+		case "MPDPlaying":
+			if(jsonData[0] == mpdIsPlaying && hasRanMPD) {
+				return;
+			}
+			if(jsonData[0] == "1") {
+				$("#mpd-seek").slider("enable");
+				conn.send("MPD^tlength");
+				conn.send("MPD^telapsed");
+				conn.send("MPD^ttitle");
+				$(".mpd-time").removeClass("nouse");
+				$(".mpd-elapsed").removeClass("nouse");
+				$("#mpd-seek").slider("enable");
+				mpdIsPlaying = "1";
+			} else {
+				$("#mpd-seek").slider("disable");
+				$(".mpd-time").addClass("nouse");
+				$(".mpd-elapsed").addClass("nouse");
+			}
+			hasRanMPD = 1;
+			break;
+
+		case "MPDElapsed":
+			if(!seeking) {
+				seekMPD(parseInt(jsonData[0]));
+			}
+			break;
+
+		case "MPDLength":
+			$(".mpd-time").text(jsonData[0].toString().toMMSS());
+			$(".mpd-time").attr("timeval",jsonData[0]);
+			break;
+
+		case "MPDPaused":
+			console.log(jsonData);
+			if(jsonData[0] == "1") {
+				$(".mpd-pause-icon").removeClass("fa-pause");
+				$(".mpd-pause-icon").addClass("fa-play");
+				$("#mpd-seek").slider("disable");
+				$(".mpd-time").addClass("nouse");
+				$(".mpd-elapsed").addClass("nouse");
+				mpdIsPlaying = "0";
+			} else {
+				$(".mpd-pause-icon").removeClass("fa-play");
+				$(".mpd-pause-icon").addClass("fa-pause");
+				$(".mpd-time").removeClass("nouse");
+				$(".mpd-elapsed").removeClass("nouse");
+				$("#mpd-seek").slider("enable");
+				mpdIsPlaying = "1";
+			}
+			break;
+
+		case "MPDTitle":
+			console.log(jsonData[0]);
+			$("#mpd-title").text(jsonData[0]);
+			break;
+
+		case "MPDPlPos":
+			cur_pos = jsonData[0];
+			break;
 	}
 }
 
@@ -114,6 +181,15 @@ setInterval(function(){
 		if(vlcIsOpen) {
 			conn.send("VLC^telapsed");
 			conn.send("VLC^tlength");
+		}
+		if(mpdIsPlaying == "1") {
+			conn.send('MPD^telapsed');
+			conn.send('MPD^tplpos');
+			if(old_pos != cur_pos) {
+				conn.send('MPD^tlength');
+				conn.send('MPD^ttitle');
+				old_pos = cur_pos;
+			}
 		}
 	}
 },1000)

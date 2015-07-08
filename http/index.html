@@ -2,6 +2,8 @@
 
 <head>
 	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
 	<meta charset="UTF-8">
 	<link rel="stylesheet" type="text/css" href="css/reset.css">
 	<link rel="stylesheet" type="text/css" href="css/main.css">
@@ -9,6 +11,7 @@
 	<link rel="stylesheet" href="css/font-awesome.min.css">
 	<script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
 	<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
 	<script>
 		String.prototype.padLeft = function (length, character) { 
 			return new Array(length - this.length + 1).join(character || ' ') + this; 
@@ -43,6 +46,14 @@
 				range: "min",
 				animate: false
 			});
+			$("#mpd-seek").slider({
+				value: 0,
+				orientation: "horizontal",
+				range: "min",
+				animate: false
+			});
+			$("#mpd-seek").slider("disable");
+			$("#vlc-seek").slider("disable");
 		});
 	</script>
 </head>
@@ -78,6 +89,23 @@
 					<div style="min-height: 61px;">
 						<h1>Volume</h1>
 						<div id="master" style="width: calc(100% - 72px); float: left;"></div><span class="vol-val ctrl-value">60%</span>
+					</div>
+				</div>
+				<div class="section" id="mpc-section">
+					<div style="min-height: 152px;">
+						<h1>MPD</h1>
+						<div class="vlc-controls">
+							<div class="vlc-ctrl" id="mpd-prev"><i class="mpd-prev-icon fa fa-fast-backward fa-fw">&nbsp;</i></div>
+							<div class="vlc-ctrl" id="mpd-pause"><i class="mpd-pause-icon fa fa-pause fa-fw">&nbsp;</i></div>
+							<div class="vlc-ctrl" id="mpd-stop"><i class="mpd-stop-icon fa fa-stop fa-fw">&nbsp;</i></div>
+							<div class="vlc-ctrl" id="mpd-next"><i class="mpd-next-icon fa fa-fast-forward fa-fw">&nbsp;</i></div>
+						</div>
+						<div class="vlc-title-wrap">
+							<div id="mpd-title"></div>
+						</div>
+						<span class="mpd-elapsed ctrl-value" timeval="0" style="float: left;">00:00</span>
+						<div id="mpd-seek" style="width: calc(100% - 144px); float: left;"></div>
+						<span class="mpd-time ctrl-value" timeval="0" style="float: right;">00:00</span>
 					</div>
 				</div>
 				<div class="section" id="vlc-section">
@@ -120,7 +148,9 @@
 				<div class="section" id="input-section" style="display: none;">
 					<h1>Input</h1>
 					<h2>Mouse</h2>
-					<div class="touchpad-box"></div>
+					<div id="drag-prohibit">
+						<div class="touchpad-box"></div>
+					</div>
 					<div class="touchpad-buttons">
 						<div class="touchpad-left"></div>
 						<div class="touchpad-right"></div>
@@ -144,15 +174,19 @@
 			$(".datetime").text(getFormattedDate());
 		},1000);
 
-		$(".touchpad-box").height(parseInt($(".touchpad-box").width())*0.5625 + "px");
+		$("#drag-prohibit").height(parseInt($("#drag-prohibit").width())*0.5625 + "px");
+		$(".touchpad-box").draggable({
+			containment: "#drag-prohibit",
+			scroll: false
+		});
 		$(window).resize(function(){
-			$(".touchpad-box").height(parseInt($(".touchpad-box").width())*0.5625 + "px");
+			$("#drag-prohibit").height(parseInt($("#drag-prohibit").width())*0.5625 + "px");
 		});
 
 		$("#showInputs").on("click",function(){
 			if($(this).is(':checked')) {
 				$("#input-section").show();
-				$(".touchpad-box").height(parseInt($(".touchpad-box").width())*0.5625 + "px");
+				$("#drag-prohibit").height(parseInt($("#drag-prohibit").width())*0.5625 + "px");
 			} else {
 				$("#input-section").hide();
 			}
@@ -182,6 +216,25 @@
 			}
 		}
 
+		function seekMPD(val, update) {
+			if(typeof update === "undefined") {
+				update = 0;
+			}
+			if(seeking) {
+				val = (val/100) * parseInt($(".mpd-time").attr("timeval"));
+			}
+
+			$(".mpd-elapsed").attr("timeval",val);
+			$(".mpd-elapsed").text(val.toString().toMMSS());
+			if(!seeking) {
+				$("#mpd-seek").slider("value",(val/parseInt($(".mpd-time").attr("timeval")))*100);
+			}
+
+			if(update) {
+				conn.send("MPD^tseek^t" + val);
+			}
+		}
+
 		$("#master").on("slide",function(event,ui){
 			updateVolume($(this).slider("value"));
 		});
@@ -201,6 +254,41 @@
 		});
 		$("#vlc-stop").on("click",function(){
 			conn.send("VLC^tstop");
+		});
+
+		$("#mpd-seek").on("slidestop",function(event,ui){
+			seeking = 0;
+			seekMPD($(this).slider("value"),1);
+		});
+		$("#mpd-seek").on("slide",function(event,ui){
+			seeking = 1;
+			seekMPD($(this).slider("value"));
+		});
+		$("#mpd-pause").on("click",function(){
+			conn.send("MPD^tpause");
+			if(mpdIsPlaying) {
+				conn.send("MPD^tlength");
+				conn.send("MPD^telapsed");
+				conn.send("MPD^ttitle");
+			}
+		});
+		$("#mpd-stop").on("click",function(){
+			conn.send("MPD^tstop");
+			$("#mpd-seek").slider("disable");
+			$(".mpd-elapsed").addClass("nouse");
+			$(".mpd-time").addClass("nouse");
+		});
+		$("#mpd-next").on("click",function(){
+			conn.send("MPD^tnext");
+			conn.send("MPD^tlength");
+			conn.send("MPD^telapsed");
+			conn.send("MPD^ttitle");
+		});
+		$("#mpd-prev").on("click",function(){
+			conn.send("MPD^tprev");
+			conn.send("MPD^tlength");
+			conn.send("MPD^telapsed");
+			conn.send("MPD^ttitle");
 		});
 
 		$("#ytSub").on("click",function(){
@@ -243,11 +331,14 @@
 			mouse_y = Math.abs(position.top - event.pageY)/height;
 		});
 
+		var tapping = 0;
 		$('.touchpad-box').each(function(){
 			var hovered = false;
 			var loop = window.setInterval(function(){
 				if(hovered) {
-					conn.send("mouse^tpos^t" + mouse_x + "^t" + mouse_y);
+					if(!tapping) {
+						conn.send("mouse^tpos^t" + mouse_x + "^t" + mouse_y);
+					}
 				}
 			}, 100);
 
